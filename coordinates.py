@@ -14,7 +14,9 @@ for _ in range(100):
     time_1 = datetime.now(UTC)
     moment_1 = time_scale.from_datetime(time_1)
     position_1 = iss.at(moment_1)
+
     sleep(time)
+
     time_2 = datetime.now(UTC)
     moment_2 = time_scale.from_datetime(time_2)
     position_2 = iss.at(moment_2)
