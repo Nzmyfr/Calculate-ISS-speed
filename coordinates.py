@@ -9,6 +9,9 @@ iss = ISS()
 time_scale = load.timescale()
 
 average = 0
+gsd = 0
+sensor_width = 7.564  # in mm for Raspberry Pi Camera
+focal_length = 35  # in mm
 count 	= 0
 altitude_values = []
 for _ in range(100):
@@ -29,14 +32,10 @@ for _ in range(100):
     altitude_values.append(altitude)
     print(f'{velocity:.4f}')
     print(f'Altitude: {altitude:.4f} m')
-    
     average = (count * average + velocity) / (count + 1)
     count += 1
-
-print(f'The average velocity of the ISS is {average:.4f}')
-
-def find_gsd(altitude, focal_length=35):
-    focal_length = 35  # in mm
-    sensor_width = 7.564  # in mm for Raspberry Pi Camera
+    print(f'The average velocity of the ISS is {average:.4f}')
     gsd = sensor_width * altitude / (focal_length * 1000)  # in meters per pixel
-    return gsd
+    print(f'The gsd is {gsd:.4f}')
+
+
