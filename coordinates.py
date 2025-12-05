@@ -11,9 +11,8 @@ time_scale = load.timescale()
 average = 0
 gsd = 0
 sensor_width = 7.564  # in mm for Raspberry Pi Camera
-focal_length = 35  # in mm
+focal_length = 11.8  # in mm
 count 	= 0
-altitude_values = []
 for _ in range(100):
     time_1 = datetime.now(UTC)
     moment_1 = time_scale.from_datetime(time_1)
@@ -28,14 +27,12 @@ for _ in range(100):
     diff = position_2 - position_1
     distance_km = diff.distance().km
     velocity = distance_km / time
-    altitude = position_2.distance().m
-    altitude_values.append(altitude)
-    print(f'{velocity:.4f}')
+    altitude = position_2.distance().m * 1000
+    print(f'velocity = {velocity:.4f} km/s, distance = {distance_km} km')
     print(f'Altitude: {altitude:.4f} m')
     average = (count * average + velocity) / (count + 1)
     count += 1
     print(f'The average velocity of the ISS is {average:.4f}')
-    gsd = sensor_width * altitude / (focal_length * 1000)  # in meters per pixel
-    print(f'The gsd is {gsd:.4f}')
-
-
+    Dw = sensor_width * altitude / focal_length / 1000000  # in kilometers per pixel
+    print(f'The Dw is {Dw:.4f}km')
+    print(f'The velocity is {(Dw / time):.4f}km/s \n')
