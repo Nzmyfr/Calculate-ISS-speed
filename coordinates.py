@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from skyfield.api import load
 from time import sleep
 
-time = 0.5 # seconds
+time = 1.0 # seconds
 
 iss = ISS()
 time_scale = load.timescale()
