@@ -35,4 +35,4 @@ for _ in range(100):
     print(f'The average velocity of the ISS is {average:.4f}')
     Dw = sensor_width * altitude / focal_length / 1000000  # in kilometers per pixel
     print(f'The Dw is {Dw:.4f}km')
-    print(f'The velocity is {(Dw / time):.4f}km/s \n')
+    print(f'The velocity is {velocity:.4f}km/s \n')
