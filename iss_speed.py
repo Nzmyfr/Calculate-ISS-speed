@@ -32,7 +32,6 @@ def calculate_features(image_1_cv, image_2_cv, feature_number):
     keypoints_2, descriptors_2 = orb.detectAndCompute(image_2_cv, None)
     return keypoints_1, keypoints_2, descriptors_1, descriptors_2
 
-
 def calculate_matches(descriptors_1, descriptors_2):
     brute_force = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
     matches = brute_force.match(descriptors_1, descriptors_2)

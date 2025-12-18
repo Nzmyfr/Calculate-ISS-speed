@@ -8,11 +8,10 @@ time = 1.0 # seconds
 iss = ISS()
 time_scale = load.timescale()
 
-average = 0
-gsd = 0
+average = 0.0
 sensor_width = 7.564  # in mm for Raspberry Pi Camera
 focal_length = 11.8  # in mm
-count 	= 0
+count = 0
 for _ in range(100):
     time_1 = datetime.now(UTC)
     moment_1 = time_scale.from_datetime(time_1)
@@ -34,5 +33,4 @@ for _ in range(100):
     count += 1
     print(f'The average velocity of the ISS is {average:.4f}')
     Dw = sensor_width * altitude / focal_length / 1000000  # in kilometers per pixel
-    print(f'The Dw is {Dw:.4f}km')
-    print(f'The velocity is {velocity:.4f}km/s \n')
+    print(f'The Dw is {Dw:.4f}km \n')
