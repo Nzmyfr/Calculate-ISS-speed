@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, UTC
 start_time = datetime.now()
 from exif import Image
 import cv2
-import math
+#import math
 from time import sleep
 from astro_pi_orbit import ISS
 from picamzero import Camera
@@ -22,7 +22,7 @@ def get_time_difference(image_1, image_2):
     time_2 = get_time(image_2)
     time_difference = time_2 - time_1
     return time_difference.seconds
-
+'''
 def convert_to_cv(image_1, image_2):
     image_1_cv = cv2.imread(image_1, 0)
     image_2_cv = cv2.imread(image_2, 0)
@@ -69,14 +69,14 @@ def calculate_mean_distance(coordinates_1, coordinates_2):
         distance = math.hypot(x_difference, y_difference)
         all_distances = all_distances + distance
         return all_distances / len(merged_coordinates)
-    
+
     
 def calculate_speed_in_kmps(feature_distance, GSD, time_difference):
     distance = feature_distance * GSD / 100000
     #distance = feature_distance * 4414.859 / 100000
     speed = distance / time_difference
     return speed
-
+'''
 def save_result(estimate_kmps, file_path):
     # Format the estimate_kmps to have a precision
     # of 5 significant figures
@@ -105,7 +105,6 @@ def calculate_speed():
     time_difference = get_time_difference(image_1, image_2) # Get time difference between images
     print(f'Time difference between images: {time_difference} seconds')
     
-    #time_1 = datetime.now(UTC)
     time_1 = get_time(image_1).replace(tzinfo=UTC)
     print(f'Time 1: {time_1}')
     moment_1 = time_scale.from_datetime(time_1)
@@ -113,7 +112,6 @@ def calculate_speed():
 
     sleep(sleep_time)
 
-    #time_2 = datetime.now(UTC)
     time_2 = get_time(image_2).replace(tzinfo=UTC)
     print(f'Time 2: {time_2}')
     moment_2 = time_scale.from_datetime(time_2)
