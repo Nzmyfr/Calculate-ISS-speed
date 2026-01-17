@@ -1,28 +1,20 @@
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, UTC
 start_time = datetime.now()
+
 from exif import Image
-import cv2
-#import math
-from time import sleep
 from astro_pi_orbit import ISS
 from picamzero import Camera
 from skyfield.api import load
 
-sleep_time = 1 #sec
 image_1 = 'Photo1.jpg'
 image_2 = 'Photo2.jpg'
-
-time_scale = load.timescale()
-iss = ISS()
-
-cam = Camera()
 
 def get_time(image):
     with open(image, 'rb') as image_file:
         img = Image(image_file)
         time_str = img.get("datetime_original")
         time = datetime.strptime(time_str, '%Y:%m:%d %H:%M:%S')
-        return time   
+        return time
    
 def get_time_difference(image_1, image_2):
     time_1 = get_time(image_1)
@@ -42,7 +34,7 @@ def save_result(estimate_kmps, file_path):
     with open(file_path, 'w') as file:
         file.write(output_string)
 
-def calculate_speed():
+def calculate_speed(iss, time_scale, cam):
     print()
     
     cam.take_photo(image_1)
@@ -66,6 +58,10 @@ def calculate_speed():
     return speed
 
 def main():
+    time_scale = load.timescale()
+    iss = ISS()
+
+    cam = Camera()
     time_delta = 0.5 #minutes
     file_path = 'result.txt'    # Replace with your desired file path
     
@@ -73,24 +69,24 @@ def main():
     # (these will be almost the same at the start)
     # Run a loop for 1 minute
     average_ISS_speed = 0
-    count   = 0
-    max_loop_time = 0.0
+    step_count        = 0
+    max_loop_time     = 0.0
     
     now_time = datetime.now()
     while ((now_time - start_time).total_seconds() < (time_delta * 60 - max_loop_time)):
         loop_start = datetime.now()
         
-        ISS_speed = calculate_speed()
-        average_ISS_speed = (count * average_ISS_speed + ISS_speed) / (count + 1)
-        print(f'The calculated speed of the ISS on step {count} is {ISS_speed}, average speed is {average_ISS_speed:.4f}')
-        count += 1
+        ISS_speed = calculate_speed(iss, time_scale, cam)
+        average_ISS_speed = (step_count * average_ISS_speed + ISS_speed) / (step_count + 1)
+        print(f'The calculated speed of the ISS on step {step_count} is {ISS_speed}, average speed is {average_ISS_speed:.4f}')
+        step_count += 1
         
         # Update the current time
         now_time  = datetime.now()
         loop_time = (now_time - loop_start).total_seconds()
         if loop_time > max_loop_time:
             max_loop_time = loop_time
-        #print(loop_time, max_loop_time) 
+        print(loop_time, max_loop_time) 
 
     save_result(average_ISS_speed, file_path)
     print('\nResult is written to', file_path)
