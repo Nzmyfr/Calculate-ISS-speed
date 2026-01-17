@@ -14,13 +14,7 @@ def get_time(image):
         img = Image(image_file)
         time_str = img.get("datetime_original")
         time = datetime.strptime(time_str, '%Y:%m:%d %H:%M:%S')
-        return time
-   
-def get_time_difference(image_1, image_2):
-    time_1 = get_time(image_1)
-    time_2 = get_time(image_2)
-    time_difference = time_2 - time_1
-    return time_difference.seconds
+        return time.replace(tzinfo=UTC)
 
 def save_result(estimate_kmps, file_path):
     # Format the estimate_kmps to have a precision
@@ -34,28 +28,26 @@ def save_result(estimate_kmps, file_path):
     with open(file_path, 'w') as file:
         file.write(output_string)
 
-def calculate_speed(iss, time_scale, cam):
-    print()
-    
-    cam.take_photo(image_1)
+def calculate_speed(iss, time_scale, cam, image_1):
+    #cam.take_photo(image_1)
     cam.take_photo(image_2)
-    
-    time_1 = get_time(image_1).replace(tzinfo=UTC)
+
+    time_1 = get_time(image_1)
     moment_1 = time_scale.from_datetime(time_1)
     position_1 = iss.at(moment_1)
 
-    time_2 = get_time(image_2).replace(tzinfo=UTC)
+    time_2 = get_time(image_2)
     moment_2 = time_scale.from_datetime(time_2)
     position_2 = iss.at(moment_2)
     
-    time_difference = get_time_difference(image_1, image_2) # Get time difference between images
+    time_difference = (time_2 - time_1).total_seconds()
     print(f'Time difference between images: {time_difference} seconds')
 
     diff = position_2 - position_1
     distance_km = diff.distance().km
     speed = distance_km / time_difference
 
-    return speed
+    return speed, image_2
 
 def main():
     time_scale = load.timescale()
@@ -72,15 +64,16 @@ def main():
     step_count        = 0
     max_loop_time     = 0.0
     
+    old_image = cam.take_photo(image_1)
     now_time = datetime.now()
     while ((now_time - start_time).total_seconds() < (time_delta * 60 - max_loop_time)):
         loop_start = datetime.now()
-        
-        ISS_speed = calculate_speed(iss, time_scale, cam)
+        print(f'\n--- Step {step_count + 1} ---')
+        ISS_speed, old_image = calculate_speed(iss, time_scale, cam, old_image)
         average_ISS_speed = (step_count * average_ISS_speed + ISS_speed) / (step_count + 1)
         print(f'The calculated speed of the ISS on step {step_count} is {ISS_speed}, average speed is {average_ISS_speed:.4f}')
         step_count += 1
-        
+
         # Update the current time
         now_time  = datetime.now()
         loop_time = (now_time - loop_start).total_seconds()
