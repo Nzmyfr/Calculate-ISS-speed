@@ -1,13 +1,14 @@
 from datetime import datetime, UTC
-start_time = datetime.now()
 
+from numpy import imag
+start_time = datetime.now()
+import os
 from exif import Image
 from astro_pi_orbit import ISS
 from picamzero import Camera
 from skyfield.api import load
 
-image_1 = 'Photo1.jpg'
-image_2 = 'Photo2.jpg'
+image_index = 1
 
 def get_time(image):
     with open(image, 'rb') as image_file:
@@ -28,26 +29,22 @@ def save_result(estimate_kmps, file_path):
     with open(file_path, 'w') as file:
         file.write(output_string)
 
-def calculate_speed(iss, time_scale, cam, image_1):
-    #cam.take_photo(image_1)
-    cam.take_photo(image_2)
+def calculate_speed(iss, time_scale, cam, time_1, position_1):
+    global image_index
 
-    time_1 = get_time(image_1)
-    moment_1 = time_scale.from_datetime(time_1)
-    position_1 = iss.at(moment_1)
-
-    time_2 = get_time(image_2)
+    image_index += 1
+    image_filename = f'Photo{image_index}.jpg'
+    cam.take_photo(image_filename)
+    time_2 = get_time(image_filename)
     moment_2 = time_scale.from_datetime(time_2)
     position_2 = iss.at(moment_2)
     
     time_difference = (time_2 - time_1).total_seconds()
-    print(f'Time difference between images: {time_difference} seconds')
-
     diff = position_2 - position_1
     distance_km = diff.distance().km
     speed = distance_km / time_difference
 
-    return speed, image_2
+    return speed, time_2, position_2
 
 def main():
     time_scale = load.timescale()
@@ -63,23 +60,30 @@ def main():
     average_ISS_speed = 0
     step_count        = 0
     max_loop_time     = 0.0
-    
-    old_image = cam.take_photo(image_1)
+
+    image_1 = f'Photo{image_index}.jpg'
+    cam.take_photo(image_1)
+    last_time = get_time(image_1)
+    moment_1 = time_scale.from_datetime(last_time)
+    last_postion = iss.at(moment_1)
     now_time = datetime.now()
     while ((now_time - start_time).total_seconds() < (time_delta * 60 - max_loop_time)):
         loop_start = datetime.now()
         print(f'\n--- Step {step_count + 1} ---')
-        ISS_speed, old_image = calculate_speed(iss, time_scale, cam, old_image)
+        ISS_speed, last_time, last_postion = calculate_speed(iss, time_scale, cam, last_time, last_postion)
         average_ISS_speed = (step_count * average_ISS_speed + ISS_speed) / (step_count + 1)
         print(f'The calculated speed of the ISS on step {step_count} is {ISS_speed}, average speed is {average_ISS_speed:.4f}')
         step_count += 1
+        if (image_index % 5) > 0:
+            file_to_delete = f'Photo{image_index}.jpg'
+            if os.path.exists(file_to_delete):
+                os.remove(file_to_delete)
 
         # Update the current time
         now_time  = datetime.now()
         loop_time = (now_time - loop_start).total_seconds()
         if loop_time > max_loop_time:
             max_loop_time = loop_time
-        print(loop_time, max_loop_time) 
 
     save_result(average_ISS_speed, file_path)
     print('\nResult is written to', file_path)
