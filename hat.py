@@ -1,6 +1,8 @@
+from time import sleep
 from sense_hat import SenseHat
 from datetime import datetime
 from csv import writer
+from time import sleep
 
 sense = SenseHat()
 sense.color.gain = 60
@@ -44,9 +46,23 @@ def get_sense_data():
 
     return sense_data
 
-with open('data.csv', 'w', newline='') as f:
-    data_writer = writer(f)
+try:
+    with open('data.csv', 'w', newline='') as f:
+        data_writer = writer(f)
+        data_writer.writerow(['temp', 'pres', 'hum',
+                              'red', 'green', 'blue', 'clear', #only for Sense HAT version 2
+                              'yaw', 'pitch', 'roll',
+                              'mag_x', 'mag_y', 'mag_z',
+                              'acc_x', 'acc_y', 'acc_z',
+                              'gyro_x', 'gyro_y', 'gyro_z',
+                              'datetime'])
 
-    while True:
-        data = get_sense_data()
-        data_writer.writerow(data)
+        for _ in range(100):
+            data = get_sense_data()
+            print(data)
+            data_writer.writerow(data)
+            sleep(10)
+except IOError as e:
+    print(f"Error opening or writing to 'data.csv': {e}")
+except Exception as e:
+    print(f"Unexpected error while collecting sensor data: {e}")
