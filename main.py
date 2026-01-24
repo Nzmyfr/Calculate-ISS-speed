@@ -11,6 +11,31 @@ from csv import writer
 
 image_index = 1
 
+def get_iss_position_data(position_object):
+    """
+    Extract latitude, longitude, and altitude from ISS position object.
+    
+    Args:
+        position_object: ISS position object from astro_pi_orbit
+    
+    Returns:
+        tuple: (latitude, longitude, altitude_km)
+    """
+    try:
+        # Get subpoint (latitude, longitude on Earth's surface)
+        subpoint = position_object.subpoint()
+        latitude = subpoint.latitude.degrees
+        longitude = subpoint.longitude.degrees
+        
+        # Get altitude (distance from Earth's center minus Earth's radius)
+        distance = position_object.distance()
+        altitude_km = distance.km - 6371.0  # Earth's mean radius in km
+        
+        return latitude, longitude, altitude_km
+    except Exception as e:
+        print(f"Error extracting ISS position: {e}")
+        return 0.0, 0.0, 0.0
+
 def get_time(image):
     with open(image, 'rb') as image_file:
         img = Image(image_file)
@@ -47,18 +72,20 @@ def calculate_speed(iss, time_scale, cam, time_1, position_1):
 
     return speed, time_2, position_2
 
-def get_sense_data(sense):
+def get_sense_data(sense, last_position=None):
     sense_data = []
     # Get environmental data
     sense_data.append(sense.get_temperature())
     sense_data.append(sense.get_pressure())
     sense_data.append(sense.get_humidity())
+    '''
     # Get colour sensor data (version 2 Sense HAT only)
     red, green, blue, clear = sense.colour.colour
     sense_data.append(red)
     sense_data.append(green)
     sense_data.append(blue)
     sense_data.append(clear)
+    '''
     # Get orientation data
     orientation = sense.get_orientation()
     sense_data.append(orientation["yaw"])
@@ -82,6 +109,17 @@ def get_sense_data(sense):
 
     # Get the date and time
     sense_data.append(datetime.now())
+    
+    # Get ISS position data
+    if last_position is not None:
+        lat, lon, alt_km = get_iss_position_data(last_position)
+        sense_data.append(lat)
+        sense_data.append(lon)
+        sense_data.append(alt_km)
+    else:
+        sense_data.append(0.0)
+        sense_data.append(0.0)
+        sense_data.append(0.0)
 
     return sense_data
 
@@ -90,7 +128,7 @@ def main():
     iss = ISS()
 
     cam = Camera()
-    time_delta = 0.5 #minutes
+    time_delta = 0.5 #10 #minutes
     file_path = 'result.txt'    # Replace with your desired file path
     
     sense = SenseHat()
@@ -111,6 +149,7 @@ def main():
     last_postion = iss.at(moment_1)
     with open('data.csv', 'w', newline='') as f: 
         data_writer = writer(f)
+        '''
         data_writer.writerow(['temp', 'pres', 'hum',
                               'red', 'green', 'blue', 'clear', #only for Sense HAT version 2
                               'yaw', 'pitch', 'roll',
@@ -118,7 +157,14 @@ def main():
                               'acc_x', 'acc_y', 'acc_z',
                               'gyro_x', 'gyro_y', 'gyro_z',
                               'datetime'])
-
+        '''
+        data_writer.writerow(['temp', 'pres', 'hum',
+                              'yaw', 'pitch', 'roll',
+                              'mag_x', 'mag_y', 'mag_z',
+                              'acc_x', 'acc_y', 'acc_z',
+                              'gyro_x', 'gyro_y', 'gyro_z',
+                              'datetime', 'iss_latitude', 'iss_longitude', 'iss_altitude_km'])
+                              
         now_time = datetime.now()
         while ((now_time - start_time).total_seconds() < (time_delta * 60 - max_loop_time)):
             loop_start = datetime.now()
@@ -133,7 +179,7 @@ def main():
                     os.remove(file_to_delete)
 
             try:
-                data = get_sense_data(sense)
+                data = get_sense_data(sense, last_postion)
                 print(data)
                 data_writer.writerow(data)
             except IOError as e:
