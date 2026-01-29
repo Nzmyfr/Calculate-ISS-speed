@@ -26,7 +26,7 @@ Dependencies:
 """
 
 from datetime import datetime, UTC
-start_time = datetime.now()
+START_TIME = datetime.now()
 
 from picamzero import Camera
 from exif import Image
@@ -38,7 +38,11 @@ from skyfield.api import load
 from sense_hat import SenseHat
 from csv import writer
 
-#image_index = 1
+# CONSTANTS
+EARTH_RADIUS_KM = 6371.0  # Earth's mean radius in kilometers
+TIME_WINDOW     = 10 #minutes
+FILE_PATH       = 'result.txt'    # Replace with your desired file path
+
     
 """
 Extract latitude, longitude, and altitude from ISS position.
@@ -58,7 +62,7 @@ def get_iss_position_data(position):
         
         # Get altitude (distance from Earth's center minus Earth's radius)
         distance = position.distance()
-        altitude_km = distance.km - 6371.0  # Earth's mean radius in km
+        altitude_km = distance.km - EARTH_RADIUS_KM
         
         return latitude, longitude, altitude_km
     except Exception as e:
@@ -122,7 +126,7 @@ Parameters:
     last_position : ISS position at last_time
 
 Returns:
-    speed_kmps    : curent speed in km/s
+    speed_kmps    : current speed in km/s
     time          : datetime of the second photo
     position      : ISS position at the time of the second photo
 """
@@ -207,9 +211,6 @@ Takes periodic photos to calculate ISS speed, collects Sense HAT sensor data,
 and saves results to CSV and output files.
 """
 def main():
-    time_delta = 10 #minutes
-    file_path = 'result.txt'    # Replace with your desired file path
-
     cam = Camera()
 
     time_scale = load.timescale()
@@ -246,7 +247,7 @@ def main():
     # (these will be almost the same at the start)
     # Run a loop for 10 minute
     now_time = datetime.now()
-    while ((now_time - start_time).total_seconds() < (time_delta * 60 - max_loop_time)):
+    while ((now_time - START_TIME).total_seconds() < (TIME_WINDOW * 60 - max_loop_time)):
         loop_start = datetime.now()
 
         image_index += 1
@@ -279,10 +280,10 @@ def main():
             max_loop_time = loop_time
     # End of loop
 
-    save_result(average_ISS_speed, file_path)
-    print(f'\nResult is written to {file_path}')
+    save_result(average_ISS_speed, FILE_PATH)
+    print(f'\nResult is written to {FILE_PATH}')
     
-    print(f'\nProgram was running for {now_time - start_time}')
+    print(f'\nProgram was running for {now_time - START_TIME}')
 # End of main()
     
 
