@@ -207,7 +207,7 @@ Takes periodic photos to calculate ISS speed, collects Sense HAT sensor data,
 and saves results to CSV and output files.
 """
 def main():
-    time_delta = 0.5 #10 #minutes
+    time_delta = 10 #minutes
     file_path = 'result.txt'    # Replace with your desired file path
 
     cam = Camera()
