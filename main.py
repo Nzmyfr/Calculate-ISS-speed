@@ -1,3 +1,30 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+ISS Speed Calculator
+
+This program calculates the average speed of the International Space Station (ISS)
+by capturing multiple images using the Picamera, extracting timestamps from
+EXIF data, and comparing ISS positions at different times. It also collects
+sensor data from the Sense HAT including temperature, pressure, humidity,
+orientation, magnetometer, accelerometer, and gyroscope readings.
+
+The program runs for a specified time duration - 10 minutes,
+saving results to a CSV file and computing the average ISS speed.
+
+Authors: Alexander Tonev, Alexander Veselinov
+Mentor: Nikolay Cholakov
+Date: 2026-01-29
+Version: 1.0
+
+Dependencies:
+    - picamzero: Camera control
+    - exif: EXIF data extraction
+    - astro_pi_orbit: ISS tracking
+    - skyfield: Astronomical calculations
+    - sense_hat: Sense HAT sensor readings
+"""
+
 from datetime import datetime, UTC
 start_time = datetime.now()
 
@@ -11,7 +38,7 @@ from skyfield.api import load
 from sense_hat import SenseHat
 from csv import writer
 
-image_index = 1
+#image_index = 1
     
 """
 Extract latitude, longitude, and altitude from ISS position.
@@ -35,7 +62,7 @@ def get_iss_position_data(position):
         
         return latitude, longitude, altitude_km
     except Exception as e:
-        print(f"Error extracting ISS position: {e}")
+        print(f'Error extracting ISS position: {e}')
         return 0.0, 0.0, 0.0
 # End of get_iss_position_data()
 
@@ -49,11 +76,17 @@ Returns:
     datetime: The datetime when the photo was taken in UTC
 """
 def get_time(image):
-    with open(image, 'rb') as image_file:
-        img = Image(image_file)
-        time_str = img.get("datetime_original")
-        time = datetime.strptime(time_str, '%Y:%m:%d %H:%M:%S')
-        return time.replace(tzinfo=UTC)
+    try:
+        with open(image, 'rb') as image_file:
+            img = Image(image_file)
+            time_str = img.get('datetime_original')
+            if time_str is None:
+                raise ValueError(f'No datetime_original EXIF data found in {image}')
+            time = datetime.strptime(time_str, '%Y:%m:%d %H:%M:%S')
+            return time.replace(tzinfo=UTC)
+    except Exception as e:
+        print(f'Error extracting time from {image}: {e}')
+        raise
 # End of get_time()
 
 """
@@ -64,38 +97,36 @@ Parameters:
     file_path: Path to the output file
 """
 def save_result(estimate_kmps, file_path):
-    # Format the estimate_kmps to have a precision
-    # of 5 significant figures
-    estimate_kmps_formatted = f'{estimate_kmps:.4f}'
-    
-    # Create a string to write to the file
-    output_string = estimate_kmps_formatted
+    try:
+        # Format the estimate_kmps to have a precision of 4 decimal places
+        estimate_kmps_formatted = f'{estimate_kmps:.4f}'
 
-    # Write to the file
-    with open(file_path, 'w') as file:
-        file.write(output_string)
+        # Write to the file
+        with open(file_path, 'w') as file:
+            file.write(estimate_kmps_formatted)
+        print(f'Successfully saved result to {file_path}')
+    except Exception as e:
+        print(f'Unexpected error while saving result to {file_path}: {e}')
+        raise
 # End of save_result()
 
 """
 Calculate the ISS speed by taking a second photo and comparing positions.
 
 Parameters:
-    iss          : ISS object from astro_pi_orbit
-    time_scale   : Skyfield timescale object
-    cam          : Camera object for taking photos
-    last_time    : Datetime of the first measurement
-    last_position: ISS position at last_time
+    iss           : ISS object from astro_pi_orbit
+    time_scale    : Skyfield timescale object
+    cam           : Camera object for taking photos
+    image_filename: Filename for the second photo
+    last_time     : Datetime of the first measurement
+    last_position : ISS position at last_time
 
 Returns:
-    speed_kmps   : curent speed in km/s
-    time         : datetime of the second photo
-    position     : ISS position at the time of the second photo
+    speed_kmps    : curent speed in km/s
+    time          : datetime of the second photo
+    position      : ISS position at the time of the second photo
 """
-def calculate_speed(iss, time_scale, cam, last_time, last_position):
-    global image_index
-
-    image_index += 1
-    image_filename = f'Photo{image_index}.jpg'
+def calculate_speed(iss, time_scale, cam, image_filename, last_time, last_position):
     cam.take_photo(image_filename)
     time = get_time(image_filename)
     moment = time_scale.from_datetime(time)
@@ -122,6 +153,7 @@ Returns:
 """
 def get_sense_data(sense, last_position):
     sense_data = []
+
     # Get environmental data
     sense_data.append(sense.get_temperature())
     sense_data.append(sense.get_pressure())
@@ -136,24 +168,26 @@ def get_sense_data(sense, last_position):
 
     # Get orientation data
     orientation = sense.get_orientation()
-    sense_data.append(orientation["yaw"])
-    sense_data.append(orientation["pitch"])
-    sense_data.append(orientation["roll"])
+    sense_data.append(orientation['yaw'])
+    sense_data.append(orientation['pitch'])
+    sense_data.append(orientation['roll'])
+
     # Get compass data
     mag = sense.get_compass_raw()
-    sense_data.append(mag["x"])
-    sense_data.append(mag["y"])
-    sense_data.append(mag["z"])
+    sense_data.append(mag['x'])
+    sense_data.append(mag['y'])
+    sense_data.append(mag['z'])
+    
     # Get accelerometer data
     acc = sense.get_accelerometer_raw()
-    sense_data.append(acc["x"])
-    sense_data.append(acc["y"])
-    sense_data.append(acc["z"])
+    sense_data.append(acc['x'])
+    sense_data.append(acc['y'])
+    sense_data.append(acc['z'])
     #Get gyroscope data
     gyro = sense.get_gyroscope_raw()
-    sense_data.append(gyro["x"])
-    sense_data.append(gyro["y"])
-    sense_data.append(gyro["z"])
+    sense_data.append(gyro['x'])
+    sense_data.append(gyro['y'])
+    sense_data.append(gyro['z'])
 
     # Get the date and time
     sense_data.append(datetime.now())
@@ -173,7 +207,7 @@ Takes periodic photos to calculate ISS speed, collects Sense HAT sensor data,
 and saves results to CSV and output files.
 """
 def main():
-    time_delta = 10 #minutes
+    time_delta = 0.5 #10 #minutes
     file_path = 'result.txt'    # Replace with your desired file path
 
     cam = Camera()
@@ -189,63 +223,67 @@ def main():
     step_count        = 0
     max_loop_time     = 0.0
 
-    image_1 = f'Photo{image_index}.jpg'
-    cam.take_photo(image_1)
-
-    last_time = get_time(image_1)
-    moment_1 = time_scale.from_datetime(last_time)
-    last_postion = iss.at(moment_1)
-
-    with open('data.csv', 'w', newline='') as f: 
-        data_writer = writer(f)
-        data_writer.writerow(['temp', 'pres', 'hum',
-                              'red', 'green', 'blue', 'clear', #only for Sense HAT version 2
-                              'yaw', 'pitch', 'roll',
-                              'mag_x', 'mag_y', 'mag_z',
-                              'acc_x', 'acc_y', 'acc_z',
-                              'gyro_x', 'gyro_y', 'gyro_z',
-                              'datetime', 'iss_latitude', 'iss_longitude', 'iss_altitude_km',
-                              'speed'])
-
-        # Create a variable to store the current time
-        # (these will be almost the same at the start)
-        # Run a loop for 10 minute
-        now_time = datetime.now()
-        while ((now_time - start_time).total_seconds() < (time_delta * 60 - max_loop_time)):
-            loop_start = datetime.now()
-
-            ISS_speed, last_time, last_postion = calculate_speed(iss, time_scale, cam, last_time, last_postion)
-
-            average_ISS_speed = (step_count * average_ISS_speed + ISS_speed) / (step_count + 1)
-            print(f'The calculated speed of the ISS on step {step_count + 1} is {ISS_speed}, average speed is {average_ISS_speed:.4f}')
-            step_count += 1
-
-            if (image_index % 8) > 0:
-                file_to_delete = f'Photo{image_index}.jpg'
-                if os.path.exists(file_to_delete):
-                    os.remove(file_to_delete)
-
-            try:
-                data = get_sense_data(sense, last_postion)
-                data.append(ISS_speed)
-                data_writer.writerow(data)
-            except IOError as e:
-                print(f"Error opening or writing to 'data.csv': {e}")
-            except Exception as e:
-                print(f"Unexpected error while collecting sensor data: {e}")
-
-            # Update the current time
-            now_time  = datetime.now()
-            loop_time = (now_time - loop_start).total_seconds()
-            if loop_time > max_loop_time:
-                max_loop_time = loop_time
-        # End of loop
-
-        save_result(average_ISS_speed, file_path)
-        print('\nResult is written to', file_path)
-        
-        print(f'\nProgram was running for {now_time - start_time}')
-# End of main()
-        
+    image_index = 1
+    image_filename = f'Photo{image_index}.jpg'
     
+    cam.take_photo(image_filename)
+    last_time = get_time(image_filename)
+    moment_1 = time_scale.from_datetime(last_time)
+    last_position = iss.at(moment_1)
+
+    f = open('data.csv', 'w', newline='')
+    data_writer = writer(f)
+    data_writer.writerow(['temp', 'pres', 'hum',
+                            'red', 'green', 'blue', 'clear', #only for Sense HAT version 2
+                            'yaw', 'pitch', 'roll',
+                            'mag_x', 'mag_y', 'mag_z',
+                            'acc_x', 'acc_y', 'acc_z',
+                            'gyro_x', 'gyro_y', 'gyro_z',
+                            'datetime', 'iss_latitude', 'iss_longitude', 'iss_altitude_km',
+                            'speed'])
+
+    # Create a variable to store the current time
+    # (these will be almost the same at the start)
+    # Run a loop for 10 minute
+    now_time = datetime.now()
+    while ((now_time - start_time).total_seconds() < (time_delta * 60 - max_loop_time)):
+        loop_start = datetime.now()
+
+        image_index += 1
+        image_filename = f'Photo{image_index}.jpg'
+        ISS_speed, last_time, last_position = calculate_speed(iss, time_scale, cam, image_filename, last_time, last_position)
+
+        average_ISS_speed = (step_count * average_ISS_speed + ISS_speed) / (step_count + 1)
+        print(f'The calculated speed of the ISS on step {step_count + 1} is {ISS_speed}, average speed is {average_ISS_speed:.4f}')
+        step_count += 1
+
+        # Remove previous images to save space, but keep every 8th image (based on the real test)
+        if (image_index % 8) > 0:
+            try:
+                if os.path.exists(image_filename):
+                    os.remove(image_filename)
+            except OSError as e:
+                print(f'Warning: Could not delete image {image_filename}: {e}')
+
+        try:
+            data = get_sense_data(sense, last_position)
+            data.append(ISS_speed)
+            data_writer.writerow(data)
+        except Exception as e:
+            print(f'Unexpected error while collecting sensor data: {e}')
+
+        # Update the current time
+        now_time  = datetime.now()
+        loop_time = (now_time - loop_start).total_seconds()
+        if loop_time > max_loop_time:
+            max_loop_time = loop_time
+    # End of loop
+
+    save_result(average_ISS_speed, file_path)
+    print(f'\nResult is written to {file_path}')
+    
+    print(f'\nProgram was running for {now_time - start_time}')
+# End of main()
+    
+
 main()
