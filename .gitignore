@@ -5,11 +5,9 @@ __pycache__/
 *.png
 *.jpg
 *.jpeg
-*.gif
-*.bmp
-*.svg
-*.ico
-images/
 
 # Reference documentation
 QUICK_REFERENCE_FIXES.md
+
+result.txt
+data.csv
