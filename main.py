@@ -217,7 +217,6 @@ def main():
     iss = ISS()
     
     sense = SenseHat()
-    sense.color.gain = 60
     sense.color.integration_cycles = 64
 
     average_ISS_speed = 0
