@@ -232,53 +232,53 @@ def main():
     moment_1 = time_scale.from_datetime(last_time)
     last_position = iss.at(moment_1)
 
-    f = open('data.csv', 'w', newline='')
-    data_writer = writer(f)
-    data_writer.writerow(['temp', 'pres', 'hum',
-                            'red', 'green', 'blue', 'clear', #only for Sense HAT version 2
-                            'yaw', 'pitch', 'roll',
-                            'mag_x', 'mag_y', 'mag_z',
-                            'acc_x', 'acc_y', 'acc_z',
-                            'gyro_x', 'gyro_y', 'gyro_z',
-                            'datetime', 'iss_latitude', 'iss_longitude', 'iss_altitude_km',
-                            'speed'])
+    with open('data.csv', 'w', newline='') as file:
+        data_writer = writer(file)
+        data_writer.writerow(['temperature', 'pressure', 'humidity',
+                              'red', 'green', 'blue', 'clear', # only for Sense HAT version 2
+                              'yaw', 'pitch', 'roll',
+                              'magnetometer_x', 'magnetometer_y', 'magnetometer_z',
+                              'accelerometer_x', 'accelerometer_y', 'accelerometer_z',
+                              'gyroscope_x', 'gyroscope_y', 'gyroscope_z',
+                              'datetime', 'iss_latitude', 'iss_longitude', 'iss_altitude_km',
+                              'speed'])
 
-    # Create a variable to store the current time
-    # (these will be almost the same at the start)
-    # Run a loop for 10 minute
-    now_time = datetime.now()
-    while ((now_time - START_TIME).total_seconds() < (TIME_WINDOW * 60 - max_loop_time)):
-        loop_start = datetime.now()
+        # Create a variable to store the current time
+        # (these will be almost the same at the start)
+        # Run a loop for 10 minute
+        now_time = datetime.now()
+        while ((now_time - START_TIME).total_seconds() < (TIME_WINDOW * 60 - max_loop_time)):
+            loop_start = datetime.now()
 
-        image_index += 1
-        image_filename = f'Photo{image_index}.jpg'
-        ISS_speed, last_time, last_position = calculate_speed(iss, time_scale, cam, image_filename, last_time, last_position)
+            image_index += 1
+            image_filename = f'Photo{image_index}.jpg'
+            ISS_speed, last_time, last_position = calculate_speed(iss, time_scale, cam, image_filename, last_time, last_position)
 
-        average_ISS_speed = (step_count * average_ISS_speed + ISS_speed) / (step_count + 1)
-        print(f'The calculated speed of the ISS on step {step_count + 1} is {ISS_speed}, average speed is {average_ISS_speed:.4f}')
-        step_count += 1
+            average_ISS_speed = (step_count * average_ISS_speed + ISS_speed) / (step_count + 1)
+            print(f'The calculated speed of the ISS on step {step_count + 1} is {ISS_speed}, average speed is {average_ISS_speed:.4f}')
+            step_count += 1
 
-        # Remove previous images to save space, but keep every 8th image (based on the real test)
-        if (image_index % 8) > 0:
+            # Remove previous images to save space, but keep every 9th image (based on the real test)
+            if (image_index % 9) > 0:
+                try:
+                    if os.path.exists(image_filename):
+                        os.remove(image_filename)
+                except OSError as e:
+                    print(f'Warning: Could not delete image {image_filename}: {e}')
+
             try:
-                if os.path.exists(image_filename):
-                    os.remove(image_filename)
-            except OSError as e:
-                print(f'Warning: Could not delete image {image_filename}: {e}')
+                data = get_sense_data(sense, last_position)
+                data.append(ISS_speed)
+                data_writer.writerow(data)
+            except Exception as e:
+                print(f'Unexpected error while collecting sensor data: {e}')
 
-        try:
-            data = get_sense_data(sense, last_position)
-            data.append(ISS_speed)
-            data_writer.writerow(data)
-        except Exception as e:
-            print(f'Unexpected error while collecting sensor data: {e}')
-
-        # Update the current time
-        now_time  = datetime.now()
-        loop_time = (now_time - loop_start).total_seconds()
-        if loop_time > max_loop_time:
-            max_loop_time = loop_time
-    # End of loop
+            # Update the current time
+            now_time  = datetime.now()
+            loop_time = (now_time - loop_start).total_seconds()
+            if loop_time > max_loop_time:
+                max_loop_time = loop_time
+        # End of loop
 
     save_result(average_ISS_speed, FILE_PATH)
     print(f'\nResult is written to {FILE_PATH}')
