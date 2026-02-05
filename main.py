@@ -39,9 +39,9 @@ from sense_hat import SenseHat
 from csv import writer
 
 # CONSTANTS
-EARTH_RADIUS_KM = 6371.0  # Earth's mean radius in kilometers
-TIME_WINDOW     = 0.5 #minutes
-FILE_PATH       = 'result.txt'    # Replace with your desired file path
+EARTH_RADIUS_KM = 6371.0       # Earth's mean radius in kilometers
+TIME_WINDOW     = 10           # minutes
+FILE_PATH       = 'result.txt' # Replace with your desired file path
 
     
 """
