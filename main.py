@@ -40,7 +40,7 @@ from csv import writer
 
 # CONSTANTS
 EARTH_RADIUS_KM = 6371.0  # Earth's mean radius in kilometers
-TIME_WINDOW     = 10 #minutes
+TIME_WINDOW     = 0.5 #minutes
 FILE_PATH       = 'result.txt'    # Replace with your desired file path
 
     
@@ -120,7 +120,7 @@ Calculate the ISS speed by taking a second photo and comparing positions.
 Parameters:
     iss           : ISS object from astro_pi_orbit
     time_scale    : Skyfield timescale object
-    cam           : Camera object for taking photos
+    camera        : Camera object for taking photos
     image_filename: Filename for the second photo
     last_time     : Datetime of the first measurement
     last_position : ISS position at last_time
@@ -130,15 +130,14 @@ Returns:
     time          : datetime of the second photo
     position      : ISS position at the time of the second photo
 """
-def calculate_speed(iss, time_scale, cam, image_filename, last_time, last_position):
-    cam.take_photo(image_filename)
+def calculate_speed(iss, time_scale, camera, image_filename, last_time, last_position):
+    camera.take_photo(image_filename)
     time = get_time(image_filename)
     moment = time_scale.from_datetime(time)
     position = iss.at(moment)
     
     time_difference = (time - last_time).total_seconds()
-    diff = position - last_position
-    distance_km = diff.distance().km
+    distance_km = (position - last_position).distance().km
     speed = distance_km / time_difference
 
     return speed, time, position
@@ -148,14 +147,13 @@ def calculate_speed(iss, time_scale, cam, image_filename, last_time, last_positi
 Collect all sensor data from the Sense HAT and optional ISS position.
 
 Parameters:
-    sense        : SenseHat object
-    last_position: ISS position for data collection
+    sense     : SenseHat object
 
 Returns:
     sense_data: All sensor readings including temperature, pressure, humidity, color,
                 orientation, magnetic field, acceleration, gyro data, datetime, and ISS position
 """
-def get_sense_data(sense, last_position):
+def get_sense_data(sense):
     sense_data = []
 
     # Get environmental data
@@ -195,12 +193,6 @@ def get_sense_data(sense, last_position):
 
     # Get the date and time
     sense_data.append(datetime.now())
-    
-    # Get ISS position data
-    lat, lon, alt_km = get_iss_position_data(last_position)
-    sense_data.append(lat)
-    sense_data.append(lon)
-    sense_data.append(alt_km)
 
     return sense_data
 # End of get_sense_data()
@@ -211,7 +203,7 @@ Takes periodic photos to calculate ISS speed, collects Sense HAT sensor data,
 and saves results to CSV and output files.
 """
 def main():
-    cam = Camera()
+    camera = Camera()
 
     time_scale = load.timescale()
     iss = ISS()
@@ -226,7 +218,7 @@ def main():
     image_index = 1
     image_filename = f'Photo{image_index}.jpg'
     
-    cam.take_photo(image_filename)
+    camera.take_photo(image_filename)
     last_time = get_time(image_filename)
     moment_1 = time_scale.from_datetime(last_time)
     last_position = iss.at(moment_1)
@@ -251,7 +243,7 @@ def main():
 
             image_index += 1
             image_filename = f'Photo{image_index}.jpg'
-            ISS_speed, last_time, last_position = calculate_speed(iss, time_scale, cam, image_filename, last_time, last_position)
+            ISS_speed, last_time, last_position = calculate_speed(iss, time_scale, camera, image_filename, last_time, last_position)
 
             average_ISS_speed = (step_count * average_ISS_speed + ISS_speed) / (step_count + 1)
             print(f'The calculated speed of the ISS on step {step_count + 1} is {ISS_speed}, average speed is {average_ISS_speed:.4f}')
@@ -266,8 +258,16 @@ def main():
                     print(f'Warning: Could not delete image {image_filename}: {e}')
 
             try:
-                data = get_sense_data(sense, last_position)
+                data = get_sense_data(sense)
+
+                # Get ISS position data
+                lat, lon, alt_km = get_iss_position_data(last_position)
+                data.append(lat)
+                data.append(lon)
+                data.append(alt_km)
+
                 data.append(ISS_speed)
+
                 data_writer.writerow(data)
             except Exception as e:
                 print(f'Unexpected error while collecting sensor data: {e}')
