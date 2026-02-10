@@ -86,12 +86,11 @@ def get_time(image):
             img = Image(image_file)
             time_str = img.get('datetime_original')
             if time_str is None:
-                raise ValueError(f'No datetime_original EXIF data found in {image}')
+                print(f'No datetime_original EXIF data found in {image}')
             time = datetime.strptime(time_str, '%Y:%m:%d %H:%M:%S')
             return time.replace(tzinfo=UTC)
     except Exception as e:
         print(f'Error extracting time from {image}: {e}')
-        raise
 # End of get_time()
 
 """
@@ -112,7 +111,6 @@ def save_result(estimate_kmps, file_path):
         print(f'Successfully saved result to {file_path}')
     except Exception as e:
         print(f'Unexpected error while saving result to {file_path}: {e}')
-        raise
 # End of save_result()
 
 """
