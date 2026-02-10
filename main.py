@@ -10,7 +10,8 @@ sensor data from the Sense HAT including temperature, pressure, humidity,
 orientation, magnetometer, accelerometer, and gyroscope readings.
 
 The program runs for a specified time duration - 10 minutes,
-saving results to a CSV file and computing the average ISS speed.
+computing the average ISS speed, saving results to a results.txt file
+and saving the sensor hat's data captured to a CSV file.
 
 Authors: Alexander Tonev, Alexander Veselinov
 Mentor: Nikolay Cholakov
