@@ -9,6 +9,6 @@ __pycache__/
 # Reference documentation
 QUICK_REFERENCE_FIXES.md
 
-result.txt
-data.csv
+#result.txt
+#data.csv
 IMPROVEMENTS.md
