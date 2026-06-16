@@ -3,7 +3,7 @@ __pycache__/
 
 # Image files
 *.png
-*.jpg
+#*.jpg
 *.jpeg
 
 # Reference documentation
