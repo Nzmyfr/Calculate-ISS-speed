@@ -2,13 +2,9 @@
 __pycache__/
 
 # Image files
-*.png
+#*.png
 #*.jpg
-*.jpeg
-
-# Reference documentation
-QUICK_REFERENCE_FIXES.md
+#*.jpeg
 
 #result.txt
 #data.csv
-IMPROVEMENTS.md
