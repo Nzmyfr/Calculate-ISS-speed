@@ -1,5 +1,7 @@
 # Calculate-ISS-speed
 
+![AACoders](images/AACoders.jpg)
+
 ## Overview
 
 **Calculate-ISS-speed** is a Python program that calculates the average speed of the International Space Station (ISS) by capturing multiple images using a Raspberry Pi camera, analyzing their timestamps, and comparing ISS orbital positions. The program also collects comprehensive sensor data from the Sense HAT module during the measurement period.
